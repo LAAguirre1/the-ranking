@@ -6,15 +6,17 @@ export const INITIAL_USERS = [
     username: "Oveja.loca.25",
     pin: "1234",
     role: "player",
-    avatar: "🐑",
+    avatar: "⚔️",
+    rpgClassId: "warrior",
+    rpgClassName: "Guerrero del Acero",
     level: 1,
     xp: 0,
     timeBomb: {
       goal: "",
-      status: "pending", // "pending" | "completed" | "failed"
+      status: "pending",
       completedAt: null
     },
-    cards: [INITIAL_CARDS[0]], // Le damos 1 carta de bienvenida
+    cards: [INITIAL_CARDS[0]],
     progress: {},
     history: []
   },
@@ -23,7 +25,9 @@ export const INITIAL_USERS = [
     username: "Princesa.avena.13",
     pin: "1234",
     role: "player",
-    avatar: "🥣",
+    avatar: "⚔️",
+    rpgClassId: "valkyrie",
+    rpgClassName: "Valquiria Heroica",
     level: 1,
     xp: 0,
     timeBomb: {
@@ -40,7 +44,9 @@ export const INITIAL_USERS = [
     username: "Caballedo.chicorita.67",
     pin: "1234",
     role: "player",
-    avatar: "🌿",
+    avatar: "🏹",
+    rpgClassId: "ranger",
+    rpgClassName: "Cazador Forestal",
     level: 1,
     xp: 0,
     timeBomb: {
@@ -57,7 +63,9 @@ export const INITIAL_USERS = [
     username: "Huevo.revuelto.33",
     pin: "1234",
     role: "player",
-    avatar: "🍳",
+    avatar: "🛡️",
+    rpgClassId: "paladin",
+    rpgClassName: "Paladín Sagrado",
     level: 1,
     xp: 0,
     timeBomb: {
@@ -74,7 +82,9 @@ export const INITIAL_USERS = [
     username: "Chocolate.rico.19",
     pin: "1234",
     role: "player",
-    avatar: "🍫",
+    avatar: "🧙‍♂️",
+    rpgClassId: "mage",
+    rpgClassName: "Mago del Tiempo",
     level: 1,
     xp: 0,
     timeBomb: {
@@ -91,7 +101,9 @@ export const INITIAL_USERS = [
     username: "El.menos.fitness.02",
     pin: "1234",
     role: "player",
-    avatar: "🛋️",
+    avatar: "🥷",
+    rpgClassId: "rogue",
+    rpgClassName: "Asesino de las Sombras",
     level: 1,
     xp: 0,
     timeBomb: {
@@ -108,7 +120,9 @@ export const INITIAL_USERS = [
     username: "Miau.miau",
     pin: "1234",
     role: "player",
-    avatar: "🐱",
+    avatar: "⚡",
+    rpgClassId: "monk",
+    rpgClassName: "Monje del Trueno",
     level: 1,
     xp: 0,
     timeBomb: {
@@ -126,10 +140,12 @@ export const INITIAL_USERS = [
     pin: "1234",
     role: "admin",
     avatar: "👑",
+    rpgClassId: "warlord",
+    rpgClassName: "Comandante Supremo",
     level: 1,
     xp: 0,
     timeBomb: {
-      goal: "Coordinar y ganar el mes",
+      goal: "Coordinar y conquistar el mes",
       status: "pending",
       completedAt: null
     },

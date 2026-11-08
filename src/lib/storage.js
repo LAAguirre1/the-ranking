@@ -7,10 +7,12 @@ import {
   setDoc,
   getDocs,
   onSnapshot,
-  updateDoc
+  updateDoc,
+  deleteDoc
 } from 'firebase/firestore';
 
-const LOCAL_STORAGE_USERS = 'the_ranking_users_v1';
+const LOCAL_STORAGE_USERS = 'the_ranking_users_v2';
+const LOCAL_STORAGE_CUSTOM_MISSIONS = 'the_ranking_custom_missions_v1';
 const LOCAL_STORAGE_SNAPSHOTS = 'the_ranking_snapshots_v1';
 
 // Initialize local data if empty
@@ -47,11 +49,9 @@ export function subscribeUsers(onUpdate) {
     const unsub = onSnapshot(collection(db, 'users'), (snapshot) => {
       if (!snapshot.empty) {
         const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        // Sort users by XP descending
         users.sort((a, b) => b.xp - a.xp);
         onUpdate(users);
       } else {
-        // If Firestore is empty, seed it with local initial users
         seedInitialUsersToFirebase(INITIAL_USERS).then(() => {
           onUpdate(INITIAL_USERS);
         });
@@ -71,7 +71,6 @@ export function subscribeUsers(onUpdate) {
   window.addEventListener('the-ranking-storage-update', handleLocalUpdate);
   window.addEventListener('storage', handleLocalUpdate);
   
-  // Initial fire
   const initial = getLocalUsers();
   initial.sort((a, b) => b.xp - a.xp);
   onUpdate(initial);
@@ -109,7 +108,6 @@ export async function updateUser(userId, updates) {
     }
   }
 
-  // Update in local storage
   const users = getLocalUsers();
   const index = users.findIndex(u => u.id === userId);
   if (index !== -1) {
@@ -125,6 +123,15 @@ export async function changeUserPin(userId, newPin) {
   return await updateUser(userId, { pin: newPin.trim() });
 }
 
+// Change user RPG Class & Avatar
+export async function updateUserRpgClass(userId, rpgClass) {
+  return await updateUser(userId, {
+    avatar: rpgClass.icon,
+    rpgClassId: rpgClass.id,
+    rpgClassName: rpgClass.name
+  });
+}
+
 // Admin: Add new player
 export async function createNewUser(userData) {
   const { db, isLive } = getFirebaseInstance();
@@ -134,7 +141,9 @@ export async function createNewUser(userData) {
     username: userData.username.trim(),
     pin: userData.pin ? userData.pin.trim() : "1234",
     role: "player",
-    avatar: userData.avatar || "🏃",
+    avatar: userData.avatar || "⚔️",
+    rpgClassId: userData.rpgClassId || "warrior",
+    rpgClassName: userData.rpgClassName || "Guerrero del Acero",
     level: 1,
     xp: 0,
     timeBomb: {
@@ -155,6 +164,122 @@ export async function createNewUser(userData) {
   users.push(newUser);
   saveLocalUsers(users);
   return newUser;
+}
+
+// --- DYNAMIC MISSIONS MANAGEMENT ---
+
+export function getCustomMissions() {
+  const data = localStorage.getItem(LOCAL_STORAGE_CUSTOM_MISSIONS);
+  if (!data) return [];
+  try {
+    return JSON.parse(data);
+  } catch (e) {
+    return [];
+  }
+}
+
+export function saveCustomMissions(missions) {
+  localStorage.setItem(LOCAL_STORAGE_CUSTOM_MISSIONS, JSON.stringify(missions));
+  window.dispatchEvent(new CustomEvent('the-ranking-missions-update', { detail: missions }));
+}
+
+export function getAllMissions() {
+  const custom = getCustomMissions();
+  
+  // Combine base missions with custom missions
+  const mainMissions = [
+    ...MISSIONS_DATA.mainMissions,
+    ...custom.filter(m => m.type === 'main')
+  ];
+
+  const secondaryMissions = [
+    ...MISSIONS_DATA.secondaryMissions,
+    ...custom.filter(m => m.type === 'secondary')
+  ];
+
+  return {
+    ...MISSIONS_DATA,
+    mainMissions,
+    secondaryMissions,
+    allList: [...mainMissions, ...secondaryMissions]
+  };
+}
+
+export function subscribeMissions(onUpdate) {
+  const { db, isLive } = getFirebaseInstance();
+
+  if (isLive && db) {
+    const unsub = onSnapshot(collection(db, 'custom_missions'), (snapshot) => {
+      const custom = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      saveCustomMissions(custom);
+      onUpdate(getAllMissions());
+    }, (error) => {
+      console.warn('Firestore missions fallback to local:', error);
+      onUpdate(getAllMissions());
+    });
+    return unsub;
+  }
+
+  const handleUpdate = () => {
+    onUpdate(getAllMissions());
+  };
+
+  window.addEventListener('the-ranking-missions-update', handleUpdate);
+  window.addEventListener('storage', handleUpdate);
+  onUpdate(getAllMissions());
+
+  return () => {
+    window.removeEventListener('the-ranking-missions-update', handleUpdate);
+    window.removeEventListener('storage', handleUpdate);
+  };
+}
+
+export async function createMission(missionData) {
+  const { db, isLive } = getFirebaseInstance();
+  const newId = `mission_custom_${Date.now()}`;
+  const newMission = {
+    id: newId,
+    code: missionData.code ? missionData.code.trim() : (missionData.type === 'main' ? '★' : '•'),
+    title: missionData.title.trim(),
+    category: missionData.category?.trim() || 'Desafío Extra',
+    type: missionData.type || 'secondary', // 'main' | 'secondary'
+    targetQty: Number(missionData.targetQty) || 50,
+    unit: missionData.unit || 'reps',
+    xp: Number(missionData.xp) || (missionData.type === 'main' ? 100 : 50),
+    icon: missionData.icon || 'Flame',
+    description: missionData.description || 'Misión adicional creada por el Administrador.',
+    isCustom: true
+  };
+
+  if (isLive && db) {
+    try {
+      await setDoc(doc(db, 'custom_missions', newId), newMission);
+    } catch (e) {
+      console.error('Error saving mission to Firestore:', e);
+    }
+  }
+
+  const custom = getCustomMissions();
+  custom.push(newMission);
+  saveCustomMissions(custom);
+  return newMission;
+}
+
+export async function deleteCustomMission(missionId) {
+  const { db, isLive } = getFirebaseInstance();
+
+  if (isLive && db) {
+    try {
+      await deleteDoc(doc(db, 'custom_missions', missionId));
+    } catch (e) {
+      console.error('Error deleting mission in Firestore:', e);
+    }
+  }
+
+  const custom = getCustomMissions();
+  const filtered = custom.filter(m => m.id !== missionId);
+  saveCustomMissions(filtered);
+  return true;
 }
 
 // Record mission progress (supports adding partial reps, e.g. +20 sentadillas)
@@ -232,23 +357,19 @@ export async function updateTimeBombGoal(userId, goalText) {
 }
 
 export async function resolveTimeBombStatus(user, newStatus) {
-  // newStatus can be: "pending" | "completed" | "failed"
   const currentStatus = user.timeBomb?.status || "pending";
   if (currentStatus === newStatus) return false;
 
   let xpDiff = 0;
-  // Revert previous if applied
   if (currentStatus === "completed") xpDiff -= MISSIONS_DATA.timeBombReward;
   if (currentStatus === "failed") xpDiff -= MISSIONS_DATA.timeBombPenalty;
 
-  // Apply new
   if (newStatus === "completed") {
-    xpDiff += MISSIONS_DATA.timeBombReward; // +50
+    xpDiff += MISSIONS_DATA.timeBombReward;
   } else if (newStatus === "failed") {
-    // Check if user has active Shield card to cancel penalty
     const hasShield = (user.cards || []).some(c => c.specialEffect === 'CANCEL_BOMB_PENALTY');
     if (!hasShield) {
-      xpDiff += MISSIONS_DATA.timeBombPenalty; // -50
+      xpDiff += MISSIONS_DATA.timeBombPenalty;
     }
   }
 
@@ -350,6 +471,8 @@ export function saveSundaySnapshot(name, standings) {
       userId: u.id,
       username: u.username,
       avatar: u.avatar,
+      rpgClassId: u.rpgClassId,
+      rpgClassName: u.rpgClassName,
       xp: u.xp,
       level: u.level
     }))
