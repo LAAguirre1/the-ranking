@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { getStoredFirebaseConfig, saveFirebaseConfig, getFirebaseInstance } from '../lib/firebase';
 import { seedInitialUsersToFirebase } from '../lib/storage';
-import { Cloud, X, Check, AlertCircle, ExternalLink, RefreshCw } from 'lucide-react';
+import { Cloud, X, Check, AlertCircle, ExternalLink, RefreshCw, ShieldAlert } from 'lucide-react';
 
 export default function FirebaseConfigModal({ isOpen, onClose }) {
+  const { isAdmin } = useAuth();
   const currentConfig = getStoredFirebaseConfig();
   const [configJson, setConfigJson] = useState(
     currentConfig ? JSON.stringify(currentConfig, null, 2) : ''
@@ -13,6 +15,35 @@ export default function FirebaseConfigModal({ isOpen, onClose }) {
   const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
+
+  // Security barrier: only the Admin can access or edit credentials
+  if (!isAdmin) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+        <div className="relative w-full max-w-md bg-slate-900 border border-rose-500/50 rounded-2xl p-6 text-center shadow-2xl">
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <div className="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center mx-auto mb-3">
+            <ShieldAlert className="w-6 h-6" />
+          </div>
+          <h3 className="text-lg font-black text-white">Acceso Denegado</h3>
+          <p className="text-xs text-slate-300 mt-1.5">
+            Solo el <strong>Administrador (Admin)</strong> tiene autorización para ver o modificar la conexión a la base de datos de Firebase.
+          </p>
+          <button
+            onClick={onClose}
+            className="mt-4 px-5 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl"
+          >
+            Entendido
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handleSave = async (e) => {
     e.preventDefault();

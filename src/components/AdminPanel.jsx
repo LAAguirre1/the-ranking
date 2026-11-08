@@ -21,6 +21,7 @@ import {
   Key, 
   Save, 
   Camera, 
+  Cloud,
   CloudUpload, 
   CheckCircle2, 
   AlertTriangle,
@@ -217,6 +218,15 @@ export default function AdminPanel({ onOpenFirebaseModal }) {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={onOpenFirebaseModal}
+              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700 flex items-center gap-1.5 transition-all shadow-md"
+              title="Configurar credenciales de Firebase Cloud (Exclusivo Admin)"
+            >
+              <Cloud className="w-4 h-4 text-emerald-400" />
+              <span>Configurar Firebase</span>
+            </button>
+
             <button
               onClick={handleTakeSnapshot}
               className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700 flex items-center gap-1.5 transition-all shadow-md"

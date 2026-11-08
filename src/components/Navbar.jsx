@@ -61,19 +61,33 @@ export default function Navbar({
             {/* Right Side Controls */}
             <div className="flex items-center gap-1.5 sm:gap-2.5">
               
-              {/* Cloud Status Pill */}
-              <button
-                onClick={onOpenFirebaseModal}
-                title={isLive ? "Firebase Cloud conectado en vivo" : "Modo Local. Clic para conectar Firebase gratis"}
-                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border transition-all ${
-                  isLive 
-                    ? "bg-emerald-950/40 text-emerald-300 border-emerald-800/50 hover:bg-emerald-900/40" 
-                    : "bg-amber-950/30 text-amber-400 border-amber-800/50 hover:bg-amber-900/40"
-                }`}
-              >
-                {isLive ? <Cloud className="w-3.5 h-3.5 text-emerald-400" /> : <CloudOff className="w-3.5 h-3.5 text-amber-400" />}
-                <span className="hidden sm:inline">{isLive ? "Cloud Online" : "Conectar Cloud"}</span>
-              </button>
+              {/* Cloud Status Pill (Clickable only for Admin) */}
+              {isAdmin ? (
+                <button
+                  onClick={onOpenFirebaseModal}
+                  title={isLive ? "Firebase Cloud conectado en vivo (Clic para administrar)" : "Modo Local. Clic para configurar Firebase como Admin"}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border transition-all ${
+                    isLive 
+                      ? "bg-emerald-950/40 text-emerald-300 border-emerald-800/50 hover:bg-emerald-900/40" 
+                      : "bg-amber-950/30 text-amber-400 border-amber-800/50 hover:bg-amber-900/40"
+                  }`}
+                >
+                  {isLive ? <Cloud className="w-3.5 h-3.5 text-emerald-400" /> : <CloudOff className="w-3.5 h-3.5 text-amber-400" />}
+                  <span className="hidden sm:inline">{isLive ? "Cloud Online" : "Configurar Cloud"}</span>
+                </button>
+              ) : (
+                <div
+                  title={isLive ? "Conexión a la nube activa en tiempo real" : "Modo Local activo"}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border cursor-default select-none ${
+                    isLive 
+                      ? "bg-emerald-950/40 text-emerald-300 border-emerald-800/50" 
+                      : "bg-slate-900/60 text-slate-400 border-slate-800"
+                  }`}
+                >
+                  {isLive ? <Cloud className="w-3.5 h-3.5 text-emerald-400" /> : <CloudOff className="w-3.5 h-3.5 text-slate-500" />}
+                  <span className="hidden sm:inline">{isLive ? "En Vivo" : "Local"}</span>
+                </div>
+              )}
 
               {currentUser ? (
                 <div className="flex items-center gap-1 bg-slate-900 border border-slate-700/80 rounded-xl p-1 sm:px-2.5 sm:py-1">
