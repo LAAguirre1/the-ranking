@@ -1,32 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { RPG_CLASSES } from '../data/rpgClasses';
-import { updateUserRpgClass } from '../lib/storage';
-import { Sparkles, X, Check, Shield, Sword } from 'lucide-react';
+import { RPG_CLASSES, getRpgClass } from '../data/rpgClasses';
+import { Sparkles, X, Check } from 'lucide-react';
 
 export default function ChangeClassModal({ isOpen, onClose }) {
-  const { currentUser } = useAuth();
-  const [selectedClassId, setSelectedClassId] = useState(currentUser?.rpgClassId || 'warrior');
+  const { currentUser, changeUserClass } = useAuth();
+  const [selectedClassId, setSelectedClassId] = useState('warrior');
   const [loading, setLoading] = useState(false);
   const [savedMsg, setSavedMsg] = useState(false);
 
+  // Sync selected class with current active user whenever modal opens
+  useEffect(() => {
+    if (isOpen && currentUser) {
+      setSelectedClassId(currentUser.rpgClassId || 'warrior');
+      setSavedMsg(false);
+    }
+  }, [isOpen, currentUser]);
+
   if (!isOpen || !currentUser) return null;
 
-  const activeClass = RPG_CLASSES.find(c => c.id === selectedClassId) || RPG_CLASSES[0];
+  const activeClass = getRpgClass(selectedClassId);
 
-  const handleSelect = async (rpgClass) => {
+  const handleSelect = (rpgClass) => {
     setSelectedClassId(rpgClass.id);
   };
 
   const handleConfirm = async () => {
     setLoading(true);
-    await updateUserRpgClass(currentUser.id, activeClass);
+    await changeUserClass(activeClass);
     setLoading(false);
     setSavedMsg(true);
     setTimeout(() => {
       setSavedMsg(false);
       onClose();
-    }, 1200);
+    }, 600);
   };
 
   return (
@@ -42,23 +49,23 @@ export default function ChangeClassModal({ isOpen, onClose }) {
         </button>
 
         {/* Header */}
-        <div className="text-center pb-4 border-b border-slate-800 flex-shrink-0">
+        <div className="text-center pb-3 border-b border-slate-800 flex-shrink-0">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-bold uppercase tracking-wider mb-1">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Selección de Avatar RPG</span>
+            <span>Selección de Clase RPG</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-white">
-            Elige tu Clase de Héroe
+            Elige la Clase de {currentUser.username}
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Personaliza el avatar y título de <strong className="text-emerald-400">{currentUser.username}</strong> en el podio.
+            Cambia el avatar, marco y título de tu héroe en la tabla y podio.
           </p>
         </div>
 
-        {/* Selected Hero Preview Banner */}
-        <div className={`mt-4 p-4 rounded-2xl border ${activeClass.border} ${activeClass.bgGradient} flex-shrink-0 transition-all shadow-lg`}>
-          <div className="flex items-center gap-4">
-            <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr ${activeClass.frameColor} p-0.5 flex-shrink-0 shadow-lg`}>
+        {/* Live Preview Banner of Selected Class */}
+        <div className={`mt-3 p-4 rounded-2xl border ${activeClass.border} ${activeClass.bgGradient} flex-shrink-0 transition-all shadow-lg`}>
+          <div className="flex items-center gap-3.5">
+            <div className={`w-14 h-14 rounded-2xl bg-gradient-to-tr ${activeClass.frameColor} p-0.5 flex-shrink-0 shadow-lg`}>
               <div className="w-full h-full bg-slate-950 rounded-2xl flex items-center justify-center text-3xl">
                 {activeClass.icon}
               </div>
@@ -75,7 +82,7 @@ export default function ChangeClassModal({ isOpen, onClose }) {
               <p className="text-xs text-slate-300 font-medium mt-0.5">
                 {activeClass.title}
               </p>
-              <p className="text-[11px] text-slate-400 italic mt-1 line-clamp-1">
+              <p className="text-[11px] text-slate-400 italic mt-0.5 line-clamp-1">
                 "{activeClass.motto}"
               </p>
             </div>
@@ -83,11 +90,11 @@ export default function ChangeClassModal({ isOpen, onClose }) {
         </div>
 
         {/* Classes Grid */}
-        <div className="flex-1 overflow-y-auto py-4 space-y-2 pr-1 custom-scroll">
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-            Todas las Clases Disponibles ({RPG_CLASSES.length}):
+        <div className="flex-1 overflow-y-auto py-3 space-y-2 pr-1 custom-scroll">
+          <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+            Toca una clase para seleccionarla ({RPG_CLASSES.length}):
           </label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {RPG_CLASSES.map((cls) => {
               const isSelected = selectedClassId === cls.id;
               return (
@@ -95,9 +102,9 @@ export default function ChangeClassModal({ isOpen, onClose }) {
                   key={cls.id}
                   type="button"
                   onClick={() => handleSelect(cls)}
-                  className={`relative p-3 rounded-2xl border text-left transition-all flex flex-col justify-between ${
+                  className={`p-2.5 rounded-2xl border text-left transition-all flex flex-col justify-between ${
                     isSelected
-                      ? `bg-slate-850 border-emerald-400 ring-2 ring-emerald-400/40 shadow-lg`
+                      ? `bg-slate-850 border-emerald-400 ring-2 ring-emerald-400/40 shadow-lg scale-[1.02]`
                       : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-850/50'
                   }`}
                 >
@@ -126,7 +133,7 @@ export default function ChangeClassModal({ isOpen, onClose }) {
         {/* Footer actions */}
         <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-3 flex-shrink-0">
           <span className="text-xs text-slate-500 hidden sm:inline">
-            Puedes cambiar de clase las veces que quieras.
+            Clase actual: <strong className="text-slate-300">{currentUser.rpgClassName || 'Guerrero'}</strong>
           </span>
           <button
             onClick={handleConfirm}
@@ -136,12 +143,12 @@ export default function ChangeClassModal({ isOpen, onClose }) {
             {savedMsg ? (
               <>
                 <Check className="w-4 h-4" />
-                <span>¡Clase Guardada!</span>
+                <span>¡Clase Aplicada!</span>
               </>
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                <span>{loading ? 'Equipando...' : 'Equipar Esta Clase'}</span>
+                <span>{loading ? 'Equipando...' : `Equipar "${activeClass.name}"`}</span>
               </>
             )}
           </button>
