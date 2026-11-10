@@ -68,9 +68,13 @@ Abre tu navegador en `http://localhost:5173`.
 2. En GitHub, ve a **Settings > Pages > Build and deployment > Source** y elige **GitHub Actions**.
 3. El workflow `.github/workflows/deploy.yml` compilará y desplegará la web en minutos en `https://TU_USUARIO.github.io/TU_REPOSITORIO/`.
 
-### Opción B: Conectar Firebase Cloud Firestore (Gratis)
-1. Entra a [Firebase Console](https://console.firebase.google.com/) y crea un proyecto gratuito (**Spark Plan**).
-2. Ve a **Cloud Firestore** y créalo (en modo de prueba o con las reglas de `firestore.rules`).
-3. En la configuración del proyecto, agrega una app web y copia el objeto `firebaseConfig`.
-4. Abre la web de *The Ranking*, haz clic en el botón **"Conectar Firebase"** en la barra superior y pega la configuración.
-5. Haz clic en **"Guardar y Conectar Cloud"**. Con eso, todos los jugadores verán los puntos y el podio actualizándose en tiempo real en sus celulares.
+### Opción B: Conectar Firebase Cloud Firestore (Configurado por Defecto)
+El proyecto ya cuenta con las credenciales fijadas e integradas en el código para el proyecto **`spark-plan-a9254`**:
+1. La aplicación se conecta automáticamente en vivo al abrirla en cualquier dispositivo sin necesidad de ingresar las credenciales a mano.
+2. Si se limpia el almacenamiento del navegador o caché, las credenciales no se perderán.
+3. Las reglas de seguridad de Firestore (`firestore.rules`) ya están listas para permitir lectura/escritura de las colecciones `users`, `custom_missions`, `snapshots` y `settings`.
+4. Para desplegar directamente en Firebase Hosting (opcional):
+   ```bash
+   npm run build
+   npx firebase-tools deploy
+   ```

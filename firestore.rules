@@ -1,8 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Permite lectura y escritura de la colección de usuarios y snapshots del juego
+    // Permite lectura y escritura de usuarios, misiones dinámicas y snapshots del juego
     match /users/{userId} {
+      allow read, write: if true;
+    }
+    match /custom_missions/{missionId} {
       allow read, write: if true;
     }
     match /snapshots/{snapshotId} {

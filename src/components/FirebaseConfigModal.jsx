@@ -1,14 +1,22 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getStoredFirebaseConfig, saveFirebaseConfig, getFirebaseInstance } from '../lib/firebase';
+import { 
+  getStoredFirebaseConfig, 
+  saveFirebaseConfig, 
+  getFirebaseInstance,
+  isUsingDefaultFirebaseConfig,
+  DEFAULT_FIREBASE_CONFIG 
+} from '../lib/firebase';
 import { seedInitialUsersToFirebase } from '../lib/storage';
-import { Cloud, X, Check, AlertCircle, ExternalLink, RefreshCw, ShieldAlert } from 'lucide-react';
+import { Cloud, X, Check, AlertCircle, ExternalLink, RefreshCw, ShieldAlert, Sparkles, CheckCircle2 } from 'lucide-react';
 
 export default function FirebaseConfigModal({ isOpen, onClose }) {
   const { isAdmin } = useAuth();
   const currentConfig = getStoredFirebaseConfig();
+  const isDefaultActive = isUsingDefaultFirebaseConfig();
+  
   const [configJson, setConfigJson] = useState(
-    currentConfig ? JSON.stringify(currentConfig, null, 2) : ''
+    currentConfig ? JSON.stringify(currentConfig, null, 2) : JSON.stringify(DEFAULT_FIREBASE_CONFIG, null, 2)
   );
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -89,8 +97,16 @@ export default function FirebaseConfigModal({ isOpen, onClose }) {
     }
   };
 
-  const handleDisconnect = () => {
+  const handleResetToDefault = () => {
     saveFirebaseConfig(null);
+    setSuccess('Credenciales predeterminadas restauradas en el código.');
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+  };
+
+  const handleDisconnectToLocal = () => {
+    saveFirebaseConfig('disabled');
     window.location.reload();
   };
 
@@ -111,42 +127,43 @@ export default function FirebaseConfigModal({ isOpen, onClose }) {
           </div>
           <div>
             <h3 className="text-base font-extrabold text-white">
-              Conexión Firebase Cloud (Gratis)
+              Conexión Firebase Cloud
             </h3>
             <p className="text-xs text-slate-400">
-              Sincroniza el juego en tiempo real para todos tus amigos
+              Sincronización en tiempo real para todos los atletas
             </p>
           </div>
         </div>
 
-        {/* Step-by-step guide */}
-        <div className="p-3.5 bg-slate-950/70 border border-slate-800 rounded-xl space-y-2 mb-4 text-xs text-slate-300">
-          <p className="font-bold text-white flex items-center gap-1.5">
-            <span>Guía rápida en 3 pasos:</span>
-            <a 
-              href="https://console.firebase.google.com/" 
-              target="_blank" 
-              rel="noreferrer"
-              className="text-emerald-400 hover:underline flex items-center gap-0.5 ml-auto"
-            >
-              <span>Ir a Firebase Console</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
+        {/* Embedded Config Banner */}
+        <div className="p-3.5 bg-emerald-950/40 border border-emerald-800/60 rounded-xl mb-4 space-y-1.5 text-xs">
+          <div className="flex items-center gap-1.5 font-bold text-emerald-300">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            <span>Credenciales fijas integradas en el código fuente</span>
+          </div>
+          <p className="text-slate-300 text-[11px] leading-relaxed">
+            El proyecto <strong className="text-emerald-400 font-mono">spark-plan-a9254</strong> está configurado por defecto. Nadie tiene que ingresar las credenciales a mano ni se perderán al borrar caché o historial de navegación.
           </p>
-          <ol className="list-decimal list-inside space-y-1 text-slate-400">
-            <li>Crea un proyecto en Firebase (Plan Gratuito Spark).</li>
-            <li>Activa <strong>Cloud Firestore</strong> (en modo de prueba o con reglas públicas para lectura/escritura).</li>
-            <li>En Configuración de Proyecto, añade una App Web y pega aquí el objeto <code className="text-emerald-300">firebaseConfig</code>.</li>
-          </ol>
         </div>
 
         <form onSubmit={handleSave} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-              Pega tu configuración de Firebase:
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                Configuración JSON de Firebase:
+              </label>
+              {!isDefaultActive && (
+                <button
+                  type="button"
+                  onClick={handleResetToDefault}
+                  className="text-[11px] text-teal-400 hover:underline font-semibold"
+                >
+                  Restaurar predeterminadas
+                </button>
+              )}
+            </div>
             <textarea
-              rows={7}
+              rows={8}
               value={configJson}
               onChange={(e) => setConfigJson(e.target.value)}
               placeholder={`{\n  "apiKey": "AIzaSy...",\n  "authDomain": "tu-app.firebaseapp.com",\n  "projectId": "tu-app-id",\n  "storageBucket": "tu-app.appspot.com",\n  "messagingSenderId": "...",\n  "appId": "..."\n}`}
@@ -176,16 +193,25 @@ export default function FirebaseConfigModal({ isOpen, onClose }) {
               className="flex-1 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-black font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-500/20 hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-1.5"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              <span>{loading ? 'Conectando...' : 'Guardar y Conectar Cloud'}</span>
+              <span>{loading ? 'Conectando...' : 'Guardar y Recargar'}</span>
             </button>
 
-            {currentConfig && (
+            {currentConfig ? (
               <button
                 type="button"
-                onClick={handleDisconnect}
+                onClick={handleDisconnectToLocal}
+                title="Desconectar temporalmente de la nube y usar solo almacenamiento local"
                 className="px-3 py-2.5 bg-slate-800 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 border border-slate-700 text-xs font-bold rounded-xl transition-all"
               >
-                Desconectar
+                Modo Local
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleResetToDefault}
+                className="px-3 py-2.5 bg-slate-800 hover:bg-emerald-950/40 text-slate-300 hover:text-emerald-400 border border-slate-700 text-xs font-bold rounded-xl transition-all"
+              >
+                Reconectar Nube
               </button>
             )}
           </div>

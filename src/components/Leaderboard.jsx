@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { getSundaySnapshots } from '../lib/storage';
+import { getSundaySnapshots, subscribeSnapshots } from '../lib/storage';
 import { getRpgClass } from '../data/rpgClasses';
 import { 
   Trophy, 
@@ -18,8 +18,14 @@ export default function Leaderboard({ onOpenMissions }) {
   const { users, currentUser } = useAuth();
   const [activeView, setActiveView] = useState('live'); // 'live' | 'snapshots'
   const [selectedSnapshotId, setSelectedSnapshotId] = useState(null);
+  const [snapshots, setSnapshots] = useState(() => getSundaySnapshots());
 
-  const snapshots = getSundaySnapshots();
+  useEffect(() => {
+    const unsub = subscribeSnapshots((newSnaps) => {
+      setSnapshots([...newSnaps]);
+    });
+    return () => unsub && unsub();
+  }, []);
 
   const players = users.filter(u => u.role !== 'admin');
   const sortedPlayers = [...players].sort((a, b) => (b.xp || 0) - (a.xp || 0));

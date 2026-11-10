@@ -460,7 +460,7 @@ export function getSundaySnapshots() {
   }
 }
 
-export function saveSundaySnapshot(name, standings) {
+export async function saveSundaySnapshot(name, standings) {
   const snapshots = getSundaySnapshots();
   const newSnapshot = {
     id: `snap_${Date.now()}`,
@@ -479,5 +479,50 @@ export function saveSundaySnapshot(name, standings) {
   };
   snapshots.unshift(newSnapshot);
   localStorage.setItem(LOCAL_STORAGE_SNAPSHOTS, JSON.stringify(snapshots));
+
+  const { db, isLive } = getFirebaseInstance();
+  if (isLive && db) {
+    try {
+      await setDoc(doc(db, 'snapshots', newSnapshot.id), newSnapshot);
+    } catch (e) {
+      console.error('Error saving snapshot to Firestore:', e);
+    }
+  }
+
+  window.dispatchEvent(new CustomEvent('the-ranking-snapshots-update', { detail: snapshots }));
   return newSnapshot;
+}
+
+export function subscribeSnapshots(onUpdate) {
+  const { db, isLive } = getFirebaseInstance();
+
+  if (isLive && db) {
+    const unsub = onSnapshot(collection(db, 'snapshots'), (snapshot) => {
+      if (!snapshot.empty) {
+        const snaps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        snaps.sort((a, b) => new Date(b.date) - new Date(a.date));
+        localStorage.setItem(LOCAL_STORAGE_SNAPSHOTS, JSON.stringify(snaps));
+        onUpdate(snaps);
+      } else {
+        onUpdate(getSundaySnapshots());
+      }
+    }, (error) => {
+      console.warn('Firestore snapshots subscription fallback to local:', error);
+      onUpdate(getSundaySnapshots());
+    });
+    return unsub;
+  }
+
+  const handleUpdate = (e) => {
+    onUpdate(e.detail || getSundaySnapshots());
+  };
+
+  window.addEventListener('the-ranking-snapshots-update', handleUpdate);
+  window.addEventListener('storage', handleUpdate);
+  onUpdate(getSundaySnapshots());
+
+  return () => {
+    window.removeEventListener('the-ranking-snapshots-update', handleUpdate);
+    window.removeEventListener('storage', handleUpdate);
+  };
 }
